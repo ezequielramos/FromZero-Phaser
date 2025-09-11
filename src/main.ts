@@ -1,6 +1,14 @@
 import Phaser from "phaser";
 import { MainShip } from "./objects/mainship";
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/FromZero-Phaser/sw.js')
+      .then(reg => console.log('Service Worker registrado', reg))
+      .catch(err => console.error('Erro ao registrar SW', err));
+  });
+}
+
 const backgroundColors = ['#030303', '#0a0a2a', '#1b0033'];
 
 Math.floor(Math.random() * 3);
