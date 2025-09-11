@@ -6,7 +6,7 @@ export class Bullet extends Phaser.Physics.Arcade.Image {
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
-        this.speed = 300;
+        this.speed = 600;
     }
 
     update(time: number, delta: number) {

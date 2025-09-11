@@ -13,10 +13,13 @@ const backgroundColors = ['#030303', '#0a0a2a', '#1b0033'];
 
 Math.floor(Math.random() * 3);
 
+const height = 800;
+const width = height * 9 / 16;
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 430,
-  height: 650,
+  width: width,
+  height: height,
   backgroundColor: backgroundColors[Math.floor(Math.random() * 3)],
   scene: [MainShip],
   scale: {

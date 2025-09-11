@@ -184,7 +184,7 @@ export class MainShip extends Phaser.Scene {
         if (this.enemies.getLength() === 0) {
             this.numberOfEnemies += 1;
             for (let i = 0; i < this.numberOfEnemies; i++) {
-                const random = Phaser.Math.Between(0, 225);
+                const random = Phaser.Math.Between(0, 450);
                 this.enemies.create(random, -30 - (i * 30), 'enemy');
             }
         }
@@ -208,8 +208,20 @@ export class MainShip extends Phaser.Scene {
         }
         if (this.spaceKey && Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
             this.shoot();
-
         }
+
+        if (this.ship.y > 800 - (this.ship.height / 2)) {
+            this.ship.y = 800 - (this.ship.height / 2);
+        } else if (this.ship.y < (this.ship.height / 2)) {
+            this.ship.y = (this.ship.height / 2);
+        }
+
+        if (this.ship.x > 450 - (this.ship.width / 2)) {
+            this.ship.x = 450 - (this.ship.width / 2);
+        } else if (this.ship.x < (this.ship.width / 2)) {
+            this.ship.x = (this.ship.width / 2);
+        }
+
 
     }
 }
