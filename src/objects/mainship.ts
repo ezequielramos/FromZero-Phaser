@@ -160,6 +160,7 @@ export class MainShip extends Phaser.Scene {
             this.bullets.create(this.ship.x, this.ship.y, "laser");
         }
         if (this.gameOver) {
+            this.gameOver = false;
             this.numberOfEnemies = 0;
             this.startPlayer(this.enemies);
 
