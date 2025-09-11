@@ -23,8 +23,8 @@ export class MainShip extends Phaser.Scene {
     private starsPool!: StarsPool;
     private joystick!: VirtualJoystick;
     private gameOver = false;
-    gameOverText: Phaser.GameObjects.Text;
-    gameOver2Text: Phaser.GameObjects.Text;
+    private gameOverText?: Phaser.GameObjects.Text;
+    private gameOver2Text?: Phaser.GameObjects.Text;
 
     preload() {
         this.load.image("ship", mainShip);
@@ -165,8 +165,8 @@ export class MainShip extends Phaser.Scene {
 
             this.enemies.clear(true, true);
 
-            this.gameOverText.destroy();
-            this.gameOver2Text.destroy();
+            this.gameOverText?.destroy();
+            this.gameOver2Text?.destroy();
         }
     }
 
