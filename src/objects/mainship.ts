@@ -3,195 +3,28 @@ import mainShip from "../assets/mainship_t.png";
 import laser from "../assets/simple_laser_shot_t.png";
 import enemy from "../assets/mainship_t_o.png";
 import spark from "../assets/explosion_t.png";
-
-class Bullet extends Phaser.Physics.Arcade.Image {
-    private speed: number;
-
-    constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
-        super(scene, x, y, texture);
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
-
-        this.speed = 300;
-    }
-
-    update(time: number, delta: number) {
-        super.update(time, delta);
-
-        this.y -= this.speed * (delta / 1000);
-
-        if (this.y < -50) {
-            this.destroy();
-        }
-    }
-}
-
-class Enemy extends Phaser.Physics.Arcade.Image {
-    private speed: number;
-
-    constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
-        super(scene, x, y, texture);
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
-
-        this.speed = -50;
-
-
-        scene.tweens.add({
-            targets: this,
-            x: x + 200,
-            duration: 2000,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Linear',
-        });
-    }
-
-    update(time: number, delta: number) {
-        super.update(time, delta);
-
-        this.y -= this.speed * (delta / 1000);
-
-        if (this.y > 1000) {
-            this.destroy();
-        }
-    }
-}
-
-class Player extends Phaser.Physics.Arcade.Image {
-    private speed: number;
-
-    constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
-        super(scene, x, y, texture);
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
-
-        this.speed = 300;
-    }
-
-    update(time: number, delta: number) {
-        super.update(time, delta);
-
-        this.y -= this.speed * (delta / 1000);
-
-        if (this.y < -50) {
-            this.destroy();
-        }
-    }
-}
-
-class RectanglePool {
-    private pool: Phaser.GameObjects.Rectangle[] = [];
-    private active: Phaser.GameObjects.Rectangle[] = [];
-
-    constructor(scene: Phaser.Scene, size: number) {
-        for (let i = 0; i < size; i++) {
-            const color = Phaser.Math.RND.pick([0xffffff, 0xfff8d0, 0xa0d8ff, 0xc8a0ff, 0xffb0f0]);
-            const rect = scene.add.rectangle(-10, -10, 2, 2, color);
-            rect.setVisible(false);
-            this.pool.push(rect);
-        }
-    }
-
-    spawn(x: number, y: number, speed: number) {
-        if (this.pool.length === 0) return;
-        const rect = this.pool.pop()!;
-        rect.setPosition(x, y);
-        rect.setVisible(true);
-        (rect as any).speed = speed;
-        this.active.push(rect);
-    }
-
-    update(delta: number, height: number) {
-        for (let i = this.active.length - 1; i >= 0; i--) {
-            const rect = this.active[i] as any;
-            rect.y += rect.speed * (delta / 1000);
-
-            if (rect.y > height) {
-                rect.setVisible(false);
-                rect.y = -10;
-                this.pool.push(rect);
-                this.active.splice(i, 1);
-            }
-        }
-    }
-}
-
-class VirtualJoystick {
-    scene: Phaser.Scene;
-    base: Phaser.GameObjects.Arc;
-    thumb: Phaser.GameObjects.Arc;
-    radius: number;
-    pointerId: number | null = null;
-    direction: Phaser.Math.Vector2 = new Phaser.Math.Vector2();
-
-    constructor(scene: Phaser.Scene, x: number, y: number, radius: number) {
-        this.scene = scene;
-        this.radius = radius;
-
-        // base do joystick
-        this.base = scene.add.circle(x, y, radius, 0x888888, 0.5);
-        this.base.setScrollFactor(0);
-
-        this.thumb = scene.add.circle(x, y, radius * 0.4, 0xffffff, 0.8);
-        this.thumb.setScrollFactor(0);
-        this.thumb.setInteractive({ draggable: true });
-
-        scene.input.on('dragstart', (pointer: { id: number; }, gameObject: Phaser.GameObjects.Arc) => {
-            if (gameObject === this.thumb) {
-                this.pointerId = pointer.id;
-            }
-        });
-
-        scene.input.on('drag', (pointer: { id: number; }, gameObject: Phaser.GameObjects.Arc, dragX: number, dragY: number) => {
-            if (gameObject === this.thumb && this.pointerId === pointer.id) {
-                const dx = dragX - this.base.x;
-                const dy = dragY - this.base.y;
-
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                const angle = Math.atan2(dy, dx);
-
-                const maxDist = this.radius;
-                const clampedDist = Math.min(dist, maxDist);
-
-                this.thumb.x = this.base.x + Math.cos(angle) * clampedDist;
-                this.thumb.y = this.base.y + Math.sin(angle) * clampedDist;
-
-                this.direction.set(Math.cos(angle) * (clampedDist / maxDist), Math.sin(angle) * (clampedDist / maxDist));
-            }
-        });
-
-        scene.input.on('dragend', (pointer: { id: number; }, gameObject: Phaser.GameObjects.Arc) => {
-            if (gameObject === this.thumb && this.pointerId === pointer.id) {
-                this.thumb.x = this.base.x;
-                this.thumb.y = this.base.y;
-                this.direction.set(0, 0);
-                this.pointerId = null;
-            }
-        });
-    }
-
-    getDirection(): Phaser.Math.Vector2 {
-        return this.direction.clone();
-    }
-}
+import { Bullet } from "./bullet";
+import { Enemy } from "./enemy";
+import { Player } from "./player";
+import { StarsPool } from "./stars-pool";
+import { VirtualJoystick } from "./virtual-joystick";
 
 export class MainShip extends Phaser.Scene {
     private ship!: Phaser.GameObjects.Image;
-    // private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wKey?: Phaser.Input.Keyboard.Key;
     private aKey?: Phaser.Input.Keyboard.Key;
     private sKey?: Phaser.Input.Keyboard.Key;
     private dKey?: Phaser.Input.Keyboard.Key;
     private spaceKey?: Phaser.Input.Keyboard.Key;
-    private speed: number = 200; // pixels por segundo
+    private speed: number = 200;
     private bullets!: Phaser.Physics.Arcade.Group;
     private enemies!: Phaser.Physics.Arcade.Group;
     private numberOfEnemies = 1;
-    private starsPool!: RectanglePool;
+    private starsPool!: StarsPool;
     private joystick!: VirtualJoystick;
-
-
+    private gameOver = false;
+    gameOverText: Phaser.GameObjects.Text;
+    gameOver2Text: Phaser.GameObjects.Text;
 
     preload() {
         this.load.image("ship", mainShip);
@@ -213,12 +46,10 @@ export class MainShip extends Phaser.Scene {
         });
 
 
-        this.starsPool = new RectanglePool(this, 100);
+        this.starsPool = new StarsPool(this, 100);
         for (let i = 0; i < 50; i++) {
             this.starsPool.spawn(Phaser.Math.Between(0, this.scale.width), Phaser.Math.Between(0, this.scale.height), Phaser.Math.Between(50, 200));
         }
-
-        this.ship = new Player(this, 225, 600, 'ship');
 
         this.wKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         this.aKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.A);
@@ -230,6 +61,8 @@ export class MainShip extends Phaser.Scene {
             classType: Enemy,
             runChildUpdate: true,
         });
+
+        this.startPlayer(this.enemies);
 
         this.bullets = this.physics.add.group({
             classType: Bullet,
@@ -264,8 +97,13 @@ export class MainShip extends Phaser.Scene {
             this
         );
 
+    }
+
+    startPlayer(enemies: Phaser.Physics.Arcade.Group) {
+        this.ship = new Player(this, 225, 600, 'ship');
+
         this.physics.add.overlap(
-            this.enemies,
+            enemies,
             this.ship,
             (enemyObj, shipObj) => {
 
@@ -297,21 +135,39 @@ export class MainShip extends Phaser.Scene {
                 shipObj.destroy();
 
                 this.time.delayedCall(1000, () => {
-                    this.add.text(150, 300, "Game Over", {
+                    this.gameOverText = this.add.text(150, 300, "Game Over", {
                         fontSize: "24px",
-                        color: "#ffffff"
+                        color: "#ffffff",
                     });
+                });
+
+                this.time.delayedCall(1500, () => {
+                    this.gameOver2Text = this.add.text(139, 350, "Touch to restart", {
+                        fontSize: "16px",
+                        color: "#ffffff",
+                        align: 'center'
+                    });
+                    this.gameOver = true;
                 });
             },
             undefined,
             this
         );
-
-
     }
 
     shoot() {
-        this.bullets.create(this.ship.x, this.ship.y, "laser");
+        if (this.ship.active) {
+            this.bullets.create(this.ship.x, this.ship.y, "laser");
+        }
+        if (this.gameOver) {
+            this.numberOfEnemies = 0;
+            this.startPlayer(this.enemies);
+
+            this.enemies.clear(true, true);
+
+            this.gameOverText.destroy();
+            this.gameOver2Text.destroy();
+        }
     }
 
     update(_time: number, delta: number) {

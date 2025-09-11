@@ -20,15 +20,18 @@ const config: Phaser.Types.Core.GameConfig = {
   backgroundColor: backgroundColors[Math.floor(Math.random() * 3)],
   scene: [MainShip],
   scale: {
-    mode: Phaser.Scale.FIT,       // escala o jogo para caber na tela mantendo proporção
-    autoCenter: Phaser.Scale.CENTER_BOTH, // centraliza o jogo na tela
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   physics: {
     default: 'arcade',
     arcade: {
       debug: false,
     }
-  }
+  },
+  input: {
+    activePointers: 3
+  },
 };
 
 new Phaser.Game(config);
