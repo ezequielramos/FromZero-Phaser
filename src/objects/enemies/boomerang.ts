@@ -1,7 +1,9 @@
-export class Enemy extends Phaser.Physics.Arcade.Image {
+import { Textures } from "../textures";
 
-    constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
-        super(scene, x, y, texture);
+export class Boomerang extends Phaser.Physics.Arcade.Image {
+
+    constructor(scene: Phaser.Scene, x: number, y: number) {
+        super(scene, x, y, Textures.get('boomerang'));
         scene.add.existing(this);
         scene.physics.add.existing(this);
 

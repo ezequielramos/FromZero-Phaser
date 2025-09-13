@@ -1,16 +1,14 @@
 import Phaser from "phaser";
-import mainShip from "../assets/mainship_t.png";
-import laser from "../assets/simple_laser_shot_t.png";
-import enemy from "../assets/mainship_t_o.png";
-import spark from "../assets/explosion_t.png";
 import { Bullet } from "./bullet";
-import { Enemy } from "./enemy";
+import { Boomerang } from "./enemies/boomerang";
 import { Player } from "./player";
 import { StarsPool } from "./stars-pool";
 import { VirtualJoystick } from "./virtual-joystick";
+import { Textures } from "./textures";
+import { Pursuer } from "./enemies/pursuer";
 
-export class MainShip extends Phaser.Scene {
-    private ship!: Phaser.GameObjects.Image;
+export class MainScene extends Phaser.Scene {
+    private ship!: Phaser.Physics.Arcade.Image;
     private wKey?: Phaser.Input.Keyboard.Key;
     private aKey?: Phaser.Input.Keyboard.Key;
     private sKey?: Phaser.Input.Keyboard.Key;
@@ -18,7 +16,7 @@ export class MainShip extends Phaser.Scene {
     private spaceKey?: Phaser.Input.Keyboard.Key;
     private speed: number = 200;
     private bullets!: Phaser.Physics.Arcade.Group;
-    private enemies!: Phaser.Physics.Arcade.Group;
+    private enemies!: Phaser.Physics.Arcade.Group[];
     private numberOfEnemies = 1;
     private starsPool!: StarsPool;
     private joystick!: VirtualJoystick;
@@ -27,10 +25,11 @@ export class MainShip extends Phaser.Scene {
     private gameOver2Text?: Phaser.GameObjects.Text;
 
     preload() {
-        this.load.image("ship", mainShip);
-        this.load.image("laser", laser);
-        this.load.image("enemy", enemy);
-        this.load.image("spark", spark);
+        Textures.load(this, "ship");
+        Textures.load(this, "laser");
+        Textures.load(this, "boomerang");
+        Textures.load(this, "spark");
+        Textures.load(this, "pursuer");
     }
 
     create() {
@@ -38,7 +37,6 @@ export class MainShip extends Phaser.Scene {
         this.joystick = new VirtualJoystick(this, 100, this.scale.height - 100, 50);
 
         const fireButton = this.add.circle(this.scale.width - 80, this.scale.height - 80, 40, 0xff4444, 0.7);
-        fireButton.setScrollFactor(0);
         fireButton.setInteractive({ useHandCursor: true });
 
         fireButton.on('pointerdown', () => {
@@ -57,10 +55,13 @@ export class MainShip extends Phaser.Scene {
         this.dKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         this.spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-        this.enemies = this.physics.add.group({
-            classType: Enemy,
+        this.enemies = [this.physics.add.group({
+            classType: Boomerang,
             runChildUpdate: true,
-        });
+        }), this.physics.add.group({
+            classType: Pursuer,
+            runChildUpdate: true,
+        })];
 
         this.startPlayer(this.enemies);
 
@@ -70,7 +71,7 @@ export class MainShip extends Phaser.Scene {
         });
 
         for (let i = 0; i < this.numberOfEnemies; i++) {
-            this.enemies.create(150, -30, 'enemy');
+            this.enemies[0].create(150, -30);
         }
 
         this.physics.add.overlap(
@@ -78,9 +79,9 @@ export class MainShip extends Phaser.Scene {
             this.enemies,
             (bulletObj, enemyObj) => {
 
-                const enemy = enemyObj as Enemy;
+                const enemy = enemyObj as Boomerang;
 
-                this.add.particles(enemy.x, enemy.y, "spark", {
+                this.add.particles(enemy.x, enemy.y, Textures.get('spark'), {
                     speed: { min: -200, max: 200 },
                     lifespan: 500,
                     quantity: 20,
@@ -99,17 +100,19 @@ export class MainShip extends Phaser.Scene {
 
     }
 
-    startPlayer(enemies: Phaser.Physics.Arcade.Group) {
-        this.ship = new Player(this, 225, 600, 'ship');
+    startPlayer(enemies: Phaser.Physics.Arcade.Group[]) {
+        this.ship = new Player(this, 225, 600);
+
+        // FIXME: wut?
 
         this.physics.add.overlap(
             enemies,
             this.ship,
             (enemyObj, shipObj) => {
 
-                const enemy = enemyObj as Enemy;
+                const enemy = enemyObj as Boomerang;
 
-                this.add.particles(enemy.x, enemy.y, "spark", {
+                this.add.particles(enemy.x, enemy.y, Textures.get('spark'), {
                     speed: { min: -200, max: 200 },
                     lifespan: 500,
                     quantity: 20,
@@ -121,7 +124,7 @@ export class MainShip extends Phaser.Scene {
 
                 const player = shipObj as Player;
 
-                this.add.particles(player.x, player.y, "spark", {
+                this.add.particles(player.x, player.y, Textures.get('spark'), {
                     speed: { min: -200, max: 200 },
                     lifespan: 500,
                     quantity: 20,
@@ -164,7 +167,9 @@ export class MainShip extends Phaser.Scene {
             this.numberOfEnemies = 0;
             this.startPlayer(this.enemies);
 
-            this.enemies.clear(true, true);
+            for (const enemyGroup of this.enemies) {
+                enemyGroup.clear(true, true);
+            }
 
             this.gameOverText?.destroy();
             this.gameOver2Text?.destroy();
@@ -179,15 +184,19 @@ export class MainShip extends Phaser.Scene {
             this.starsPool.spawn(Phaser.Math.Between(0, this.scale.width), 0, Phaser.Math.Between(50, 200));
         }
 
-        const moveAmount = this.speed * (delta / 1000);
-
-        if (this.enemies.getLength() === 0) {
+        if (this.enemies[0].getLength() === 0) {
             this.numberOfEnemies += 1;
             for (let i = 0; i < this.numberOfEnemies; i++) {
                 const random = Phaser.Math.Between(0, 450);
-                this.enemies.create(random, -30 - (i * 30), 'enemy');
+                this.enemies[0].create(random, -30 - (i * 30));
             }
+            const x = Phaser.Math.RND.pick([25, 425]);
+            const pursuer = new Pursuer(this, x, -30, this.ship);
+            this.enemies[1].add(pursuer);
         }
+
+        // TODO: player direction logic should be somewhere i think
+        const moveAmount = this.speed * (delta / 1000);
 
         const dir = this.joystick.getDirection();
         this.ship.x += dir.x * this.speed * (delta / 1000);

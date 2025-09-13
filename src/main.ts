@@ -1,11 +1,10 @@
 import Phaser from "phaser";
-import { MainShip } from "./objects/mainship";
+import { MainScene } from "./objects/main-scene";
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/FromZero-Phaser/sw.js')
-      .then(reg => console.log('Service Worker registrado', reg))
-      .catch(err => console.error('Erro ao registrar SW', err));
+      .catch(err => console.error('error on registering SW', err));
   });
 }
 
@@ -21,7 +20,7 @@ const config: Phaser.Types.Core.GameConfig = {
   width: width,
   height: height,
   backgroundColor: backgroundColors[Math.floor(Math.random() * 3)],
-  scene: [MainShip],
+  scene: [MainScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
